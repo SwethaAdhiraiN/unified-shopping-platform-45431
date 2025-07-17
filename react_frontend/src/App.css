@@ -350,6 +350,122 @@ input, select, textarea {
   .admin-content { padding: 1.2rem; }
 }
 
+/* Auth Forms */
+.form-auth {
+  max-width: 360px;
+  margin: 3.5rem auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  background: var(--modal-bg);
+  border-radius: 10px;
+  box-shadow: 0 2px 16px rgba(56,18,74,0.14);
+  padding: 2.2rem 2.1rem 1.7rem 2.1rem;
+  position: relative;
+}
+@media (max-width: 600px) {
+  .form-auth { max-width: 99vw; padding: 1.1rem 0.8rem 1.2rem 0.8rem; }
+}
+.auth-title {
+  text-align: center;
+  margin-bottom: 0.9em;
+  font-size: 1.4em;
+  font-weight: 600;
+  color: var(--primary);
+}
+.form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  margin-bottom: 1.0em;
+}
+.form-control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2em;
+  margin-bottom: 0.3em;
+}
+.form-control label {
+  margin-bottom: 3px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-size: 1em;
+}
+.form-control input {
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-size: 1em;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+.form-error {
+  color: #e62c2c;
+  background: #fff1f1;
+  padding: 7px 12px 8px 12px;
+  border-radius: 5px;
+  margin-top: 7px;
+  margin-bottom: 2px;
+  font-size: 1em;
+  text-align: center;
+}
+.btn-block {
+  width: 100%;
+  margin-top: 2px;
+}
+.google-btn {
+  margin-top: 13px !important;
+  background: #fff !important;
+  color: #ec4186 !important;
+  border: 1.5px solid var(--primary) !important;
+  font-weight: 500;
+  transition: background 0.15s;
+}
+.google-btn:hover {
+  background: #f8e9f2 !important;
+}
+.auth-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 17px 0 10px 0;
+  color: #bbb;
+  font-size: 0.99em;
+}
+.auth-divider span {
+  background: var(--modal-bg);
+  padding: 0 9px;
+  z-index: 1;
+  border-radius: 7px;
+}
+.auth-divider:before, .auth-divider:after {
+  content: "";
+  flex: 1;
+  border-bottom: 1.5px solid #ececec;
+  margin: 0 2px;
+}
+
+.toggle-auth-link {
+  margin: 18px 0 0 0;
+  text-align: center;
+  font-size: 1.01em;
+  color: #676780;
+}
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--secondary);
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0 4px;
+  font-weight: 600;
+  font-size: 1em;
+  transition: color 0.14s;
+}
+.link-btn:hover {
+  color: var(--primary);
+}
+
 /* Misc utility */
 .mr-1 { margin-right: 0.5rem; }
 .mt-1 { margin-top: 0.7rem; }

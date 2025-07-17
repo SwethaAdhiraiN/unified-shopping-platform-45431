@@ -8,7 +8,7 @@ import { useNavigate, Navigate } from "react-router-dom";
  *   - redirectTo: string to redirect if already logged in.
  */
 function CustomerAuth({ redirectTo = "/" }) {
-  const { user, isAuthenticated, login, signup, loginWithGoogle } = useAuth();
+  const { isAuthenticated, login, signup, loginWithGoogle } = useAuth();
   const [mode, setMode] = useState("login"); // "login" or "signup"
   const [form, setForm] = useState({ email: "", password: "", name: "" });
   const [processing, setProcessing] = useState(false);
@@ -57,55 +57,58 @@ function CustomerAuth({ redirectTo = "/" }) {
 
   return (
     <form
-      className="modal"
-      style={{ maxWidth: 360, margin: "3.5rem auto" }}
+      className="modal form-auth"
       onSubmit={handleSubmit}
       aria-label={mode === "login" ? "Customer Login" : "Sign up"}
     >
-      <h2 style={{ textAlign: "center" }}>
-        {mode === "login" ? "Login to Shop" : "Create Account"}
-      </h2>
-      {mode === "signup" && (
-        <label>
-          Name:
+      <h2 className="auth-title">{mode === "login" ? "Login to Shop" : "Create Account"}</h2>
+      <div className="form-fields">
+        {mode === "signup" && (
+          <div className="form-control">
+            <label htmlFor="name">Name:</label>
+            <input
+              id="name"
+              name="name"
+              required
+              minLength={2}
+              value={form.name}
+              disabled={processing}
+              onChange={handleChange}
+              autoComplete="name"
+            />
+          </div>
+        )}
+        <div className="form-control">
+          <label htmlFor="email">Email:</label>
           <input
-            name="name"
+            id="email"
+            name="email"
+            type="email"
             required
-            minLength={2}
-            value={form.name}
+            autoFocus={mode === "login"}
+            autoComplete="username"
+            value={form.email}
             disabled={processing}
             onChange={handleChange}
           />
-        </label>
-      )}
-      <label>
-        Email:
-        <input
-          name="email"
-          type="email"
-          required
-          autoFocus={mode === "login"}
-          autoComplete="username"
-          value={form.email}
-          disabled={processing}
-          onChange={handleChange}
-        />
-      </label>
-      <label>
-        Password:
-        <input
-          name="password"
-          type="password"
-          required
-          minLength={6}
-          autoComplete={mode === "login" ? "current-password" : "new-password"}
-          value={form.password}
-          disabled={processing}
-          onChange={handleChange}
-        />
-      </label>
-      {error && <div style={{ color: "red", marginBottom: 10 }}>{error}</div>}
-      <button className="btn" style={{ width: "100%" }} disabled={processing}>
+        </div>
+        <div className="form-control">
+          <label htmlFor="password">Password:</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            required
+            minLength={6}
+            autoComplete={mode === "login" ? "current-password" : "new-password"}
+            value={form.password}
+            disabled={processing}
+            onChange={handleChange}
+          />
+        </div>
+        {error && <div className="form-error">{error}</div>}
+      </div>
+      <button className="btn btn-block" type="submit" disabled={processing}>
         {processing
           ? mode === "login"
             ? "Signing in..."
@@ -114,26 +117,24 @@ function CustomerAuth({ redirectTo = "/" }) {
             ? "Sign In"
             : "Sign Up"}
       </button>
-
+      <div className="auth-divider"><span>or</span></div>
       <button
         type="button"
-        className="btn secondary"
-        style={{ width: "100%", marginTop: 10, background: "#fff", color: "#ec4186" }}
+        className="btn secondary btn-block google-btn"
         onClick={handleGoogle}
         disabled={processing}
         aria-label="Sign in with Google"
       >
+        <span role="img" aria-label="Google" style={{ marginRight: 8 }}>🔒</span>
         Continue with Google
       </button>
-
-      <div style={{ marginTop: 14, textAlign: "center" }}>
+      <div className="toggle-auth-link">
         {mode === "login" ? (
           <>
             New?{" "}
             <button
               type="button"
-              className="btn secondary"
-              style={{ padding: 0, background: "none", color: "#38124a" }}
+              className="link-btn"
               onClick={() => { setMode("signup"); setError(""); }}
             >
               Sign Up
@@ -144,8 +145,7 @@ function CustomerAuth({ redirectTo = "/" }) {
             Already have an account?{" "}
             <button
               type="button"
-              className="btn secondary"
-              style={{ padding: 0, background: "none", color: "#38124a" }}
+              className="link-btn"
               onClick={() => { setMode("login"); setError(""); }}
             >
               Login
