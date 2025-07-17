@@ -18,28 +18,48 @@ import AdminOrders from './pages/admin/AdminOrders';
 
 import './App.css';
 
-// Restrict admin routes
+/**
+ * Restricts access to admin-only routes.
+ * If not authenticated as admin, redirects to the admin login page.
+ * @param {object} props - React props containing children.
+ */
 function RequireAdmin({ children }) {
   const { isAdmin } = useAuth();
   return isAdmin ? children : <Navigate to="/admin/login" replace />;
 }
 
+/**
+ * Root of the application.
+ *  - Wraps children in theme, auth and cart providers, so the context is available everywhere.
+ *  - Sets up the main routing using React Router.
+ *  - Places Navbar and CartSidebar on every page.
+ *  - Handles both customer and admin sections, with route guards for admin pages.
+ */
 function App() {
   return (
+    // ThemeProvider manages light/dark theme via context
     <ThemeProvider>
+      {/* AuthProvider keeps admin authentication state */}
       <AuthProvider>
+        {/* CartProvider manages cart state and operations for buyers */}
         <CartProvider>
+          {/* Top-level Router for page navigation */}
           <Router>
+            {/* Navbar visible across all pages */}
             <Navbar />
+            {/* CartSidebar is available as an overlay and listens for openCart events */}
             <CartSidebar />
+            {/* Main app content, routes below */}
             <div className="main-content">
               <Routes>
+                {/* Customer/shopper routes */}
                 <Route path="/" element={<ProductCatalog />} />
                 <Route path="/product/:id" element={<ProductDetail />} />
                 <Route path="/cart/checkout" element={<Checkout />} />
                 <Route path="/order/confirmation" element={<OrderConfirmation />} />
-                {/* Admin routes */}
+                {/* Admin interface entry points */}
                 <Route path="/admin/login" element={<AdminLogin />} />
+                {/* The following admin routes are protected and require admin login. */}
                 <Route
                   path="/admin"
                   element={
@@ -64,7 +84,7 @@ function App() {
                     </RequireAdmin>
                   }
                 />
-                {/* fallback */}
+                {/* Fallback route: anything else redirects to the catalog */}
                 <Route path="*" element={<Navigate to="/" />} />
               </Routes>
             </div>
