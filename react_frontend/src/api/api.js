@@ -14,33 +14,58 @@ export async function fetchProducts({ search = '', category = '' } = {}) {
         {
           id: 1,
           name: 'Wireless Headphones',
-          image:
+          images: [
             'https://images.unsplash.com/photo-1512070800541-448b6165c7de?auto=format&fit=face&w=480&q=80',
+            'https://images.unsplash.com/photo-1511367461989-f85a21fda167?auto=format&fit=face&w=480&q=80'
+          ],
+          image: 'https://images.unsplash.com/photo-1512070800541-448b6165c7de?auto=format&fit=face&w=480&q=80', // fallback image
           price: 79.99,
           description: 'Premium wireless headphones with long battery life.',
           stock: 18,
-          category: 'Electronics'
+          category: 'Electronics',
+          tags: ['trending', 'new'],
+          ratings: [
+            { user: 'Alice', rating: 5, comment: 'Great sound and comfort!', date: '2024-06-01' },
+            { user: 'Bob', rating: 4, comment: 'Good battery but needs better ANC.', date: '2024-06-03' }
+          ],
+          relatedIds: [2, 3]
         },
         {
           id: 2,
           name: 'Coffee Maker',
-          image:
+          images: [
             'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=face&w=480&q=80',
+            'https://images.unsplash.com/photo-1417325384643-aac51acc9e5d?auto=format&fit=face&w=480&q=80'
+          ],
+          image: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=face&w=480&q=80',
           price: 49.95,
           description:
             'Brew delicious coffee with programmable options and compact design.',
           stock: 32,
-          category: 'Home'
+          category: 'Home',
+          tags: ['sale'],
+          ratings: [
+            { user: 'Charlie', rating: 5, comment: 'So easy in the morning!', date: '2024-06-02' }
+          ],
+          relatedIds: [1]
         },
         {
           id: 3,
           name: 'Yoga Mat',
-          image:
+          images: [
             'https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=face&w=480&q=80',
+            'https://images.unsplash.com/photo-1519125323398-675f0ddb6308?auto=format&fit=face&w=480&q=80'
+          ],
+          image: 'https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=face&w=480&q=80',
           price: 19.99,
           description: 'Cushioned, non-slip mat perfect for home or gym.',
           stock: 57,
-          category: 'Sports'
+          category: 'Sports',
+          tags: ['new'],
+          ratings: [
+            { user: 'Dana', rating: 4, comment: 'Nice grip and thickness.', date: '2024-06-04' }
+          ],
+          relatedIds: [1]
         }
         // ...add more products if desired
       ].filter(
@@ -55,8 +80,15 @@ export async function fetchProducts({ search = '', category = '' } = {}) {
 }
 
 export async function fetchProductDetail(id) {
+  // Fetches full info (e.g. including ratings, related, etc)
   const all = await fetchProducts();
-  return all.find(p => p.id.toString() === id.toString());
+  const prod = all.find(p => p.id.toString() === id.toString());
+  if (!prod) return null;
+  // For demo: also attach relatedProducts field (objects not just ids)
+  prod.relatedProducts = all.filter(
+    p => prod.relatedIds && prod.relatedIds.includes(p.id)
+  );
+  return prod;
 }
 
 export async function placeOrder(order) {
