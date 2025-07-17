@@ -5,6 +5,8 @@
   "dependencies": {
     "@stripe/react-stripe-js": "^2.3.0",
     "@stripe/stripe-js": "^2.3.0",
+    "jspdf": "^2.5.2",
+    "papaparse": "^5.5.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.22.3",
