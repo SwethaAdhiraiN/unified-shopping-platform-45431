@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchProductDetail } from '../api/api';
-import { useCart } from '../context/CartContext';
+import { useCart, useWishlist } from '../context/CartContext';
 
 function ProductDetail() {
   const { id } = useParams();
@@ -9,11 +9,12 @@ function ProductDetail() {
   const [qty, setQty] = useState(1);
   const [loading, setLoading] = useState(true);
   const { addToCart } = useCart();
+  const { wishlist, addToWishlist, removeFromWishlist } = useWishlist();
   const navigate = useNavigate();
 
   useEffect(() => {
     setLoading(true);
-    fetchProductDetail(id).then(p => {
+    fetchProductDetail(id).then((p) => {
       setProduct(p);
       setLoading(false);
     });
@@ -22,15 +23,48 @@ function ProductDetail() {
   if (loading) return <div className="text-center mt-1">Loading...</div>;
   if (!product) return <div className="text-center mt-1">Product not found.</div>;
 
+  const inWishlist = wishlist.some((item) => item.id === product.id);
+
   return (
     <div style={{ maxWidth: 500, margin: "2.5rem auto" }}>
-      <img className="product-img" src={product.image} alt={product.name} style={{ height: 260, objectFit: "cover" }} />
-      <h2>{product.name}</h2>
-      <div style={{ color: "var(--text-secondary)", fontSize: "1em" }}>{product.category}</div>
+      <img
+        className="product-img"
+        src={product.image}
+        alt={product.name}
+        style={{ height: 260, objectFit: "cover" }}
+      />
+      <h2 style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        {product.name}
+        <button
+          onClick={() =>
+            inWishlist ? removeFromWishlist(product.id) : addToWishlist(product)
+          }
+          style={{
+            border: "none",
+            background: "none",
+            cursor: "pointer",
+            color: inWishlist ? "#ec4186" : "#bbb",
+            fontSize: "1.45em",
+          }}
+          aria-label={inWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
+          title={inWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
+        >
+          {inWishlist ? "♥" : "♡"}
+        </button>
+      </h2>
+      <div style={{ color: "var(--text-secondary)", fontSize: "1em" }}>
+        {product.category}
+      </div>
       <div style={{ margin: ".7em 0", color: "var(--primary)", fontWeight: 600 }}>
         ${product.price.toFixed(2)}
       </div>
-      <div style={{ color: "var(--text-secondary)", fontSize: "1.05em", marginBottom: 30 }}>
+      <div
+        style={{
+          color: "var(--text-secondary)",
+          fontSize: "1.05em",
+          marginBottom: 30,
+        }}
+      >
         {product.description}
       </div>
       <div style={{ marginBottom: "1em" }}>
@@ -41,7 +75,7 @@ function ProductDetail() {
             min="1"
             value={qty}
             style={{ width: 60, marginLeft: 10 }}
-            onChange={e => setQty(Number(e.target.value))}
+            onChange={(e) => setQty(Number(e.target.value))}
           />
         </label>
       </div>
@@ -50,9 +84,20 @@ function ProductDetail() {
           className="btn"
           onClick={() => {
             addToCart(product, qty);
-            window.dispatchEvent(new Event('openCart'));
-          }}>
+            window.dispatchEvent(new Event("openCart"));
+          }}
+        >
           Add to Cart
+        </button>
+        <button
+          className="btn secondary"
+          type="button"
+          style={{ background: "#fff", color: "#ec4186", border: "1px solid #ec4186" }}
+          onClick={() =>
+            inWishlist ? removeFromWishlist(product.id) : addToWishlist(product)
+          }
+        >
+          {inWishlist ? "Wishlisted" : "Wishlist"}
         </button>
         <button className="btn secondary" onClick={() => navigate(-1)}>
           Back

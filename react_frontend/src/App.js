@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
-import { CartProvider } from './context/CartContext';
+import { CartProvider, WishlistProvider } from './context/CartContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import CartSidebar from './components/CartSidebar';
@@ -12,6 +12,7 @@ import ProductDetail from './pages/ProductDetail';
 import Checkout from './pages/Checkout';
 import OrderConfirmation from './pages/OrderConfirmation';
 import CustomerAuth from './pages/CustomerAuth'; // <--- NEW
+import Wishlist from './pages/Wishlist';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminProducts from './pages/admin/AdminProducts';
@@ -54,17 +55,27 @@ function App() {
       <AuthProvider>
         {/* CartProvider manages cart state and operations for buyers */}
         <CartProvider>
-          {/* Top-level Router for page navigation */}
-          <Router>
-            {/* Navbar visible across all pages */}
-            <Navbar />
-            {/* CartSidebar is available as an overlay and listens for openCart events */}
-            <CartSidebar />
-            {/* Main app content, routes below */}
-            <div className="main-content">
-              <Routes>
+          {/* WishlistProvider manages wishlist state and operations */}
+          <WishlistProvider>
+            {/* Top-level Router for page navigation */}
+            <Router>
+              {/* Navbar visible across all pages */}
+              <Navbar />
+              {/* CartSidebar is available as an overlay and listens for openCart events */}
+              <CartSidebar />
+              {/* Main app content, routes below */}
+              <div className="main-content">
+                <Routes>
                 {/* Customer/shopper routes */}
                 <Route path="/" element={<ProductCatalog />} />
+                <Route
+                  path="/wishlist"
+                  element={
+                    <RequireCustomer>
+                      <Wishlist />
+                    </RequireCustomer>
+                  }
+                />
                 <Route path="/login" element={<CustomerAuth redirectTo="/" />} />
                 <Route path="/product/:id" element={<ProductDetail />} />
                 <Route
@@ -114,7 +125,8 @@ function App() {
                 <Route path="*" element={<Navigate to="/" />} />
               </Routes>
             </div>
-          </Router>
+            </Router>
+          </WishlistProvider>
         </CartProvider>
       </AuthProvider>
     </ThemeProvider>

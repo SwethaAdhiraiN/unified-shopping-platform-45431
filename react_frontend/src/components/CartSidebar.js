@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useCart } from '../context/CartContext';
+import { useCart, useWishlist } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
 
 function CartSidebar() {
   const [open, setOpen] = useState(false);
   const { cart, totalItems, totalPrice, removeFromCart, updateQty, clearCart } = useCart();
+  const { addToWishlist } = useWishlist();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -16,6 +17,12 @@ function CartSidebar() {
   }, []);
 
   const closeSidebar = () => setOpen(false);
+
+  // Save for later: move item to wishlist, remove from cart
+  const handleSaveForLater = (item) => {
+    addToWishlist(item);
+    removeFromCart(item.id);
+  };
 
   return (
     <>
@@ -53,14 +60,31 @@ function CartSidebar() {
                   </span>
                 </div>
               </div>
-              <button
-                className="btn secondary"
-                aria-label="Remove"
-                style={{ marginLeft: 10 }}
-                onClick={() => removeFromCart(item.id)}
-              >
-                🗑
-              </button>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
+                <button
+                  className="btn secondary"
+                  aria-label="Remove"
+                  style={{ marginLeft: 10, marginBottom: 3 }}
+                  onClick={() => removeFromCart(item.id)}
+                >
+                  🗑
+                </button>
+                <button
+                  className="btn secondary"
+                  style={{
+                    fontSize: "0.94em",
+                    padding: "0.4em 0.7em",
+                    background: "#fff",
+                    color: "#ec4186",
+                    border: "1px solid #ec4186",
+                  }}
+                  onClick={() => handleSaveForLater(item)}
+                  aria-label="Save for Later"
+                  title="Move to Wishlist"
+                >
+                  ♥ Save for Later
+                </button>
+              </div>
             </div>
           ))}
         </div>
