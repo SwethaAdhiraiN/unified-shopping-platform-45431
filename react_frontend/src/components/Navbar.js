@@ -57,6 +57,9 @@ function Navbar() {
               </NavLink>
             ) : (
               <>
+                <NavLink to="/orders" className="navbar-link">
+                  My Orders
+                </NavLink>
                 <span className="navbar-link" style={{ color: "#fff", fontWeight: 500 }}>
                   {user?.name || "Customer"}
                 </span>

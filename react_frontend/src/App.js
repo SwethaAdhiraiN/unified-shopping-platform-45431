@@ -76,6 +76,14 @@ function App() {
                     </RequireCustomer>
                   }
                 />
+                <Route
+                  path="/orders"
+                  element={
+                    <RequireCustomer>
+                      {React.createElement(require("./pages/OrderTracking").default)}
+                    </RequireCustomer>
+                  }
+                />
                 <Route path="/login" element={<CustomerAuth redirectTo="/" />} />
                 <Route path="/product/:id" element={<ProductDetail />} />
                 <Route
