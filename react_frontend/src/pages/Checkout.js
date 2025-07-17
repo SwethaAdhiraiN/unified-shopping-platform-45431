@@ -3,6 +3,7 @@ import { useCart } from '../context/CartContext';
 import { placeOrder } from '../api/api';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import StripePaymentForm from "../components/StripePaymentForm";
 
 function Checkout() {
   const { cart, totalPrice, clearCart } = useCart();
@@ -10,6 +11,7 @@ function Checkout() {
   const [customer, setCustomer] = useState(user?.name || '');
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
+  const [paymentStage, setPaymentStage] = useState("form"); // "form" | "processing" | "done"
   const navigate = useNavigate();
 
   if (cart.length === 0)
@@ -29,32 +31,43 @@ function Checkout() {
       </div>
     );
 
-  const handleSubmit = async e => {
-    e.preventDefault();
-    setProcessing(true);
+  // Handler for successful Stripe payment
+  const handlePaymentSuccess = async (paymentIntent) => {
     setError('');
+    setProcessing(true);
     try {
+      // Place order in backend (mock for now, pass paymentIntent)
       const resp = await placeOrder({
-        customer, items: cart, total: totalPrice
+        customer,
+        items: cart,
+        total: totalPrice,
+        paymentIntentId: paymentIntent?.id
       });
       setProcessing(false);
       clearCart();
       if (resp.success) {
+        setPaymentStage("done");
         navigate('/order/confirmation', { state: { orderId: resp.orderId } });
       } else {
-        setError('Order failed. Please try again.');
+        setError('Order failed after payment. Please contact support.');
       }
     } catch {
-      setError('Order failed. Please try again.');
+      setError('Order failed after payment. Please try again.');
       setProcessing(false);
     }
   };
 
+  // Handler for Stripe payment error
+  const handlePaymentError = (msg) => {
+    setError(msg);
+    setProcessing(false);
+  };
+
+  // Payment details + Stripe form view
   return (
-    <form
+    <div
       className="modal"
       style={{ margin: "2.5rem auto", maxWidth: 480 }}
-      onSubmit={handleSubmit}
       aria-label="Checkout"
     >
       <h2 style={{ textAlign: "center" }}>Checkout</h2>
@@ -86,10 +99,13 @@ function Checkout() {
         </div>
       </div>
       {error && <div style={{ color: 'red', marginBottom: 12 }}>{error}</div>}
-      <button className="btn" disabled={processing}>
-        {processing ? 'Processing...' : 'Place Order'}
-      </button>
-    </form>
+      <StripePaymentForm
+        amount={totalPrice}
+        onPaymentSuccess={handlePaymentSuccess}
+        onPaymentError={handlePaymentError}
+        disabled={processing || !customer}
+      />
+    </div>
   );
 }
 
