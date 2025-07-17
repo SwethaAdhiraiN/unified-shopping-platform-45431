@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 function AdminLogin() {
-  const { isAdmin, login } = useAuth();
+  const { isAdmin, adminLogin } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [processing, setProcessing] = useState(false);
@@ -19,7 +19,7 @@ function AdminLogin() {
     e.preventDefault();
     setProcessing(true);
     setError('');
-    const resp = await login({ username, password });
+    const resp = await adminLogin({ username, password });
     setProcessing(false);
     if (resp.success) {
       navigate('/admin');
