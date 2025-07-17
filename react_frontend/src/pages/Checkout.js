@@ -6,13 +6,52 @@ import { useAuth } from '../context/AuthContext';
 import StripePaymentForm from "../components/StripePaymentForm";
 import { validateCoupon, getDiscountAmount } from "../api/coupons";
 
+/**
+ * LocalStorage key for shipping details.
+ * In a real app, if user is authenticated, these would be saved to their user profile (backend API).
+ */
+const LS_SHIPPING_KEY = "shipping_info";
 const LS_COUPON_KEY = "applied_coupon";
 
-// PUBLIC_INTERFACE
+/**
+ * Returns default (empty) shipping details object
+ */
+function getDefaultShipping(user) {
+  return {
+    name: user?.name || "",
+    address: "",
+    city: "",
+    state: "",
+    zip: "",
+    country: "",
+    phone: "",
+    email: user?.email || ""
+  };
+}
+
+// Helper: basic email/phone validation for UX
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
+}
+function isValidPhone(phone) {
+  return !phone || /^\+?[\d\s()\-.]{7,}$/.test(phone);
+}
+
+/**
+ * PUBLIC_INTERFACE
+ * Checkout page now supports persistent, auto-filled shipping information.
+ */
 function Checkout() {
   const { cart, totalPrice, clearCart } = useCart();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [customer, setCustomer] = useState(user?.name || '');
+
+  // Shipping form state
+  const [shipping, setShipping] = useState(getDefaultShipping(user));
+  const [shippingSaved, setShippingSaved] = useState(false);
+  const [shippingTouched, setShippingTouched] = useState(false);
+  const [loadError, setLoadError] = useState('');
+  const [shippingMsg, setShippingMsg] = useState('');
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
   const [couponInput, setCouponInput] = useState('');
@@ -21,7 +60,94 @@ function Checkout() {
   const [paymentStage, setPaymentStage] = useState("form"); // "form" | "processing" | "done"
   const navigate = useNavigate();
 
-  // Load applied coupon from localStorage on mount
+  // Hydrate shipping info for authenticated user, if available.
+  useEffect(() => {
+    // In a real app, replace this with fetch profile if authenticated.
+    let found = null;
+    if (isAuthenticated && user) {
+      // Placeholder: try getting from localStorage, or if profile available from backend, fetch there.
+      const item = localStorage.getItem(`${LS_SHIPPING_KEY}_${user.email}`) || localStorage.getItem(LS_SHIPPING_KEY);
+      try {
+        found = item && JSON.parse(item);
+      } catch {}
+      if (found && typeof found === "object" && found.email === user.email) {
+        setShipping(found);
+        setShippingSaved(true);
+        setShippingMsg("Loaded saved shipping details.");
+      } else {
+        setShipping(getDefaultShipping(user));
+        setShippingSaved(false);
+      }
+    } else {
+      // Guest user or unauthenticated: load generic shipping info
+      const item = localStorage.getItem(LS_SHIPPING_KEY);
+      try {
+        found = item && JSON.parse(item);
+      } catch {}
+      if (found && typeof found === "object" && found.email && found.email.length > 0) {
+        setShipping(found);
+        setShippingSaved(true);
+        setShippingMsg("Loaded saved shipping details (device).");
+      } else {
+        setShipping(getDefaultShipping(user));
+        setShippingSaved(false);
+      }
+    }
+  // only on mount or when user changes
+  // eslint-disable-next-line
+  }, [user?.email]);
+
+  // Flag: track if user has edited the form fields since loading.
+  function handleShippingChange(e) {
+    const { name, value } = e.target;
+    setShipping((curr) => ({ ...curr, [name]: value }));
+    setShippingTouched(true);
+    setShippingSaved(false); // reset saved state if editing
+    setShippingMsg('');
+  }
+
+  // Save shipping info to localStorage/user profile
+  function saveShippingInfo(saveMsg) {
+    if (!shipping.name || !shipping.address || !shipping.city || !shipping.state || !shipping.zip || !shipping.country || !shipping.email) {
+      setShippingMsg("Fill out all required fields first.");
+      return;
+    }
+    if (!isValidEmail(shipping.email)) {
+      setShippingMsg("Please enter a valid email.");
+      return;
+    }
+    if (!isValidPhone(shipping.phone)) {
+      setShippingMsg("Enter valid phone (optional).");
+      return;
+    }
+    try {
+      // Save per-user if authenticated, otherwise generic for guests
+      if (isAuthenticated && user?.email) {
+        localStorage.setItem(`${LS_SHIPPING_KEY}_${user.email}`, JSON.stringify(shipping));
+      }
+      localStorage.setItem(LS_SHIPPING_KEY, JSON.stringify(shipping));
+      setShippingSaved(true);
+      setShippingTouched(false);
+      setShippingMsg(saveMsg || "Shipping details saved.");
+    } catch (err) {
+      setShippingMsg("Error saving shipping info to your browser.");
+    }
+  }
+
+  function clearShippingInfo() {
+    try {
+      if (isAuthenticated && user?.email) {
+        localStorage.removeItem(`${LS_SHIPPING_KEY}_${user.email}`);
+      }
+      localStorage.removeItem(LS_SHIPPING_KEY);
+    } catch {}
+    setShipping(getDefaultShipping(user));
+    setShippingSaved(false);
+    setShippingTouched(false);
+    setShippingMsg("Shipping details cleared.");
+  }
+
+  // Coupon logic (original)
   useEffect(() => {
     const raw = localStorage.getItem(LS_COUPON_KEY);
     if (raw) {
@@ -41,7 +167,6 @@ function Checkout() {
     }
     // eslint-disable-next-line
   }, []);
-  // Also clear coupon if cart is $0
   useEffect(() => {
     if (cart.length === 0) {
       setAppliedCoupon(null);
@@ -52,7 +177,7 @@ function Checkout() {
   if (cart.length === 0)
     return <div className="text-center">Your cart is empty.</div>;
 
-  // Only logged-in customers can order.
+  // If not logged in, force login for checkout (as before, but note we now hydrate/can prefill shipping even pre-login for guests if needed).
   if (!user)
     return (
       <div className="modal" style={{ maxWidth: 380, margin: "3rem auto", textAlign: "center" }}>
@@ -66,7 +191,7 @@ function Checkout() {
       </div>
     );
 
-  // Apply coupon handler
+  // Apply coupon handler (original)
   const handleApplyCoupon = (e) => {
     e.preventDefault();
     setCouponMsg('');
@@ -94,7 +219,7 @@ function Checkout() {
   const discount = getDiscountAmount(totalPrice, appliedCoupon);
   const newTotal = Math.max(0, +(totalPrice - discount).toFixed(2));
 
-  // Handler for successful Stripe payment
+  // Handler for successful Stripe payment (include shipping info in order)
   const handlePaymentSuccess = async (paymentIntent) => {
     setError('');
     setProcessing(true);
@@ -102,6 +227,7 @@ function Checkout() {
       // Place order in backend (mock for now, pass paymentIntent)
       const resp = await placeOrder({
         customer,
+        shipping,
         items: cart,
         total: newTotal,
         discount,
@@ -110,9 +236,10 @@ function Checkout() {
       });
       setProcessing(false);
       clearCart();
-      // Also clear coupon after successful order
       setAppliedCoupon(null);
       localStorage.removeItem(LS_COUPON_KEY);
+      // Save shipping on successful order!
+      saveShippingInfo("Shipping details saved for future checkouts.");
       if (resp.success) {
         setPaymentStage("done");
         navigate('/order/confirmation', { state: { orderId: resp.orderId } });
@@ -135,23 +262,174 @@ function Checkout() {
   return (
     <div
       className="modal"
-      style={{ margin: "2.5rem auto", maxWidth: 480 }}
+      style={{ margin: "2rem auto", maxWidth: 540 }}
       aria-label="Checkout"
     >
-      <h2 style={{ textAlign: "center" }}>Checkout</h2>
-      <div>
-        <label>
-          Name:
-          <input
-            value={customer}
-            required
-            minLength={2}
-            maxLength={40}
-            disabled={processing}
-            onChange={e => setCustomer(e.target.value)}
-          />
-        </label>
-      </div>
+      <h2 style={{ textAlign: "center", marginBottom: 12 }}>Checkout</h2>
+
+      {/* --- Begin Shipping Section --- */}
+      <section style={{
+        margin: "0 0 1em 0",
+        padding: "1rem 1.1rem 1.1rem 1.1rem",
+        border: "1.5px solid #ececec",
+        borderRadius: 10,
+        background: "#faf9fc"
+      }}>
+        <h3 style={{ margin: "0 0 .4rem 0", fontSize: "1.13em" }}>
+          Shipping Information
+        </h3>
+        <form
+          autoComplete="on"
+          spellCheck={false}
+          style={{ display: "grid", gap: "8px 14px", gridTemplateColumns: "1fr 1fr" }}
+          onSubmit={e => { e.preventDefault(); saveShippingInfo("Shipping details saved."); }}
+        >
+          <div style={{ gridColumn: "span 2" }}>
+            <label>
+              Name:<span style={{ color: "#ec4186" }}> *</span>
+              <input
+                name="name"
+                required
+                minLength={2}
+                maxLength={40}
+                value={shipping.name}
+                disabled={processing}
+                onChange={handleShippingChange}
+                autoComplete="name"
+              />
+            </label>
+          </div>
+          <div style={{ gridColumn: "span 2" }}>
+            <label>
+              Address:<span style={{ color: "#ec4186" }}> *</span>
+              <input
+                name="address"
+                required
+                minLength={5}
+                maxLength={80}
+                value={shipping.address}
+                disabled={processing}
+                onChange={handleShippingChange}
+                autoComplete="street-address"
+              />
+            </label>
+          </div>
+          <label>
+            City:<span style={{ color: "#ec4186" }}> *</span>
+            <input
+              name="city"
+              required
+              minLength={2}
+              maxLength={40}
+              value={shipping.city}
+              disabled={processing}
+              onChange={handleShippingChange}
+              autoComplete="address-level2"
+            />
+          </label>
+          <label>
+            State/Province:<span style={{ color: "#ec4186" }}> *</span>
+            <input
+              name="state"
+              required
+              minLength={2}
+              maxLength={30}
+              value={shipping.state}
+              disabled={processing}
+              onChange={handleShippingChange}
+              autoComplete="address-level1"
+            />
+          </label>
+          <label>
+            ZIP/Postal Code:<span style={{ color: "#ec4186" }}> *</span>
+            <input
+              name="zip"
+              required
+              minLength={3}
+              maxLength={12}
+              value={shipping.zip}
+              disabled={processing}
+              onChange={handleShippingChange}
+              autoComplete="postal-code"
+            />
+          </label>
+          <label>
+            Country:<span style={{ color: "#ec4186" }}> *</span>
+            <input
+              name="country"
+              required
+              minLength={2}
+              maxLength={40}
+              value={shipping.country}
+              disabled={processing}
+              onChange={handleShippingChange}
+              autoComplete="country"
+            />
+          </label>
+          <label>
+            Email:<span style={{ color: "#ec4186" }}> *</span>
+            <input
+              name="email"
+              type="email"
+              required
+              minLength={4}
+              maxLength={60}
+              value={shipping.email}
+              disabled={processing}
+              onChange={handleShippingChange}
+              autoComplete="email"
+            />
+          </label>
+          <label>
+            Phone:
+            <input
+              name="phone"
+              type="tel"
+              minLength={7}
+              maxLength={24}
+              value={shipping.phone}
+              disabled={processing}
+              onChange={handleShippingChange}
+              autoComplete="tel"
+            />
+          </label>
+          <div style={{ gridColumn: "span 2", display: "flex", gap: 12, marginTop: 4 }}>
+            <button
+              className="btn"
+              type="button"
+              disabled={!shippingTouched || processing}
+              onClick={() => saveShippingInfo("Shipping details saved.")}
+              style={{ minWidth: 120 }}
+            >
+              {shippingSaved ? "Saved" : "Save"}
+            </button>
+            <button
+              className="btn secondary"
+              type="button"
+              disabled={processing}
+              onClick={clearShippingInfo}
+              style={{ background: "#fff", color: "#ec4186", border: "1px solid #ec4186", minWidth: 100 }}
+            >
+              Clear
+            </button>
+            {shippingMsg &&
+              <span style={{
+                color: shippingSaved ? "#21ab37" : "#ec4186",
+                fontSize: "0.97em", margin: "6px 0 0 11px", letterSpacing: ".01em"
+              }}>
+                {shippingMsg}
+              </span>
+            }
+          </div>
+        </form>
+        <div className="text-small" style={{ marginTop: 8, color: "#8d8e95" }}>
+          {shippingSaved
+            ? "Your shipping info is saved for quick future checkouts."
+            : "You can save or clear your shipping details here."}
+        </div>
+      </section>
+      {/* --- End Shipping Section --- */}
+
       {/* Coupon code entry */}
       <div style={{ margin: "1em 0 8px 0" }}>
         <form style={{ display: "flex", gap: 6, alignItems: "center" }} onSubmit={handleApplyCoupon} autoComplete="off">
@@ -238,7 +516,13 @@ function Checkout() {
         amount={newTotal}
         onPaymentSuccess={handlePaymentSuccess}
         onPaymentError={handlePaymentError}
-        disabled={processing || !customer}
+        disabled={
+          processing
+          || !customer
+          || !shipping.name || !shipping.address || !shipping.city
+          || !shipping.state || !shipping.zip || !shipping.country
+          || !isValidEmail(shipping.email)
+        }
       />
     </div>
   );
