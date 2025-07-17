@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 function Navbar() {
   const { theme, toggleTheme } = useTheme();
   const { totalItems } = useCart();
-  const { isAdmin, logout } = useAuth();
+  const { user, isAdmin, isCustomer, isAuthenticated, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -51,6 +51,20 @@ function Navbar() {
                 </span>
               )}
             </button>
+            {!isAuthenticated ? (
+              <NavLink to="/login" className="navbar-link">
+                Login
+              </NavLink>
+            ) : (
+              <>
+                <span className="navbar-link" style={{ color: "#fff", fontWeight: 500 }}>
+                  {user?.name || "Customer"}
+                </span>
+                <button className="navbar-link btn secondary" onClick={() => { logout(); navigate("/"); }}>
+                  Logout
+                </button>
+              </>
+            )}
             <NavLink to="/admin" className="navbar-link">
               Admin
             </NavLink>

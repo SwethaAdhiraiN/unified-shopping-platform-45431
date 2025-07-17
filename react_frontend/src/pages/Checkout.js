@@ -2,16 +2,32 @@ import React, { useState } from 'react';
 import { useCart } from '../context/CartContext';
 import { placeOrder } from '../api/api';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 function Checkout() {
   const { cart, totalPrice, clearCart } = useCart();
-  const [customer, setCustomer] = useState('');
+  const { user } = useAuth();
+  const [customer, setCustomer] = useState(user?.name || '');
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
   if (cart.length === 0)
     return <div className="text-center">Your cart is empty.</div>;
+
+  // Only logged-in customers can order.
+  if (!user)
+    return (
+      <div className="modal" style={{ maxWidth: 380, margin: "3rem auto", textAlign: "center" }}>
+        <h2>Sign in to Checkout</h2>
+        <p>
+          Please <b>log in or sign up</b> before checking out.
+        </p>
+        <button className="btn" onClick={() => navigate('/login')}>
+          Go to Login
+        </button>
+      </div>
+    );
 
   const handleSubmit = async e => {
     e.preventDefault();

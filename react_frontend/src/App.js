@@ -11,6 +11,7 @@ import ProductCatalog from './pages/ProductCatalog';
 import ProductDetail from './pages/ProductDetail';
 import Checkout from './pages/Checkout';
 import OrderConfirmation from './pages/OrderConfirmation';
+import CustomerAuth from './pages/CustomerAuth'; // <--- NEW
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminProducts from './pages/admin/AdminProducts';
@@ -29,6 +30,16 @@ function RequireAdmin({ children }) {
 }
 
 /**
+ * Restricts access to customer-only routes (JWT auth, not admin).
+ * If not authenticated as customer, redirects to login/signup page.
+ * @param {object} props - React props containing children.
+ */
+function RequireCustomer({ children }) {
+  const { isCustomer } = useAuth();
+  return isCustomer ? children : <Navigate to="/login" replace />;
+}
+
+/**
  * Root of the application.
  *  - Wraps children in theme, auth and cart providers, so the context is available everywhere.
  *  - Sets up the main routing using React Router.
@@ -39,7 +50,7 @@ function App() {
   return (
     // ThemeProvider manages light/dark theme via context
     <ThemeProvider>
-      {/* AuthProvider keeps admin authentication state */}
+      {/* AuthProvider keeps admin/customer authentication state */}
       <AuthProvider>
         {/* CartProvider manages cart state and operations for buyers */}
         <CartProvider>
@@ -54,9 +65,24 @@ function App() {
               <Routes>
                 {/* Customer/shopper routes */}
                 <Route path="/" element={<ProductCatalog />} />
+                <Route path="/login" element={<CustomerAuth redirectTo="/" />} />
                 <Route path="/product/:id" element={<ProductDetail />} />
-                <Route path="/cart/checkout" element={<Checkout />} />
-                <Route path="/order/confirmation" element={<OrderConfirmation />} />
+                <Route
+                  path="/cart/checkout"
+                  element={
+                    <RequireCustomer>
+                      <Checkout />
+                    </RequireCustomer>
+                  }
+                />
+                <Route
+                  path="/order/confirmation"
+                  element={
+                    <RequireCustomer>
+                      <OrderConfirmation />
+                    </RequireCustomer>
+                  }
+                />
                 {/* Admin interface entry points */}
                 <Route path="/admin/login" element={<AdminLogin />} />
                 {/* The following admin routes are protected and require admin login. */}
